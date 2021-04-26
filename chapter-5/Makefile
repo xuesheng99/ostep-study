@@ -1,5 +1,5 @@
-all: p1 question1 question2
-
+all: p1 question1 question2 question3
+ 
 clean:
 	rm -f ./dist
 
@@ -11,3 +11,6 @@ question1:
 
 question2:
 	gcc -o ./dist/question2 question2.c -Wall
+
+question3:
+	gcc -o ./dist/question3 question3.c -Wall
