@@ -24,9 +24,13 @@ int main(int argc, char const *argv[])
     else if (rc1 == 0) //child #1
     {
         //write pipe
-        printf("child #1");
-        close(pipefd[0]); // close read.
-        dup2(pipefd[1], STDOUT_FILENO); // redirect stdout to pipe write
+        printf("child #1\n");
+        close(pipefd[0]); // close read, only write
+        if (dup2(pipefd[1], STDOUT_FILENO) != STDOUT_FILENO) // redirect stdout to pipe write
+        {
+            fprintf(stderr, "child #1 dup2 failed.\n");
+            exit(1);
+        }
         printf("the message send to pipe\n");
 
     }
@@ -42,13 +46,18 @@ int main(int argc, char const *argv[])
         else if (rc2 == 0) //child #2
         {
             //read pipe
-            printf("child #1");
+            printf("child #2\n");
             close(pipefd[1]); //close write
-            dup2(pipefd[0], STDIN_FILENO); // read end
+            if (dup2(pipefd[0], STDIN_FILENO) != STDIN_FILENO) // read end
+            {
+                fprintf(stderr, "child 2 dup2 failed.\n");
+            }
+            
 
-            char buff[512]; // make a buffer
-            read(STDIN_FILENO, buff, 512);
+            char buff[BUFSIZ]; // make a buffer
+            int c = read(STDIN_FILENO, buff, BUFSIZ);
             printf("%s\n", buff);
+            printf("bytes count: %d\n", c);
             
         }
         else
