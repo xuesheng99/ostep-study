@@ -53,7 +53,6 @@ int main(int argc, char const *argv[])
                 fprintf(stderr, "child 2 dup2 failed.\n");
             }
             
-
             char buff[BUFSIZ]; // make a buffer
             int c = read(STDIN_FILENO, buff, BUFSIZ);
             printf("%s\n", buff);
