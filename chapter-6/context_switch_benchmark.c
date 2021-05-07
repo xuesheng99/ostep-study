@@ -1,11 +1,26 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <sched.h>
 
+#define LOOPSIZE 10e3
 int main(int argc, char const *argv[])
 {
+    //allow cpu #0
+    cpu_set_t set;
+    int ret;
+
+    CPU_ZERO(&set);
+    CPU_SET(0, &set);
+    ret = sched_setaffinity(0, sizeof(cpu_set_t), &set);
+    if (ret == -1)
+    {
+        perror("sched_getaffinity");
+    }
+
     //create two pipes
     int pipefd1[2];
     int pipefd2[2];
@@ -23,53 +38,28 @@ int main(int argc, char const *argv[])
     int rc1 = fork();
     if (rc1 < 0)
     {
-        fprintf(stderr, "Child #1 fork failed.\n");
+        fprintf(stderr, "Child process fork failed.\n");
         exit(1);
     } else if(rc1 == 0) {
-        // Child #1
-        int counter = 0; //msg counter
-        while (1)
+        // Child process
+        char buf[1];
+        struct timeval start, end;
+        gettimeofday(&start, NULL);
+        for (int i = 0; i < LOOPSIZE; i++)
         {
-            sleep(2);
-            printf("Child #1 Round #%d\n", ++counter);
-            size_t ret;
-            ret = write(pipefd1[1], "Child #1 send msg\n", 512); //pipe1 write end
-            printf("Child #1 has send to pipe1 %ld bytes on success\n", ret);
-            char buffer[512];
-            ret = read(pipefd2[0], buffer, 512); //pipe2 read end
-            printf("Child #1 has read %ld bytes from pipe2 on success\n", ret);
-            printf("    ---msg: %s", buffer);
+            write(pipefd1[1], "a", 1); //pipe1 write end
+            read(pipefd2[0], buf, 1); //pipe2 read end
         }
+        gettimeofday(&end, NULL);
+        printf("The avg context switch time is %f us\n", (float)(end.tv_sec * 10E6 + end.tv_usec - start.tv_sec * 10E6 - start.tv_usec) / (LOOPSIZE * 2));
 
     } else {
         //parent process
-        int rc2 = fork();
-        if (rc2 < 0) 
+        char buf[1];
+        for (int i = 0; i < LOOPSIZE; i++)
         {
-            fprintf(stderr, "Child #2 fork failed.\n");
-            exit(1);
-        }else if(rc2 == 0){
-            // Child #2
-            int counter = 0; //msg counter
-            while (1)
-            {
-                sleep(1);
-                printf("Child #2 Round #%d\n", ++counter);
-                size_t ret;
-                char buffer[512];
-                read(pipefd1[0], buffer, 512); //pipe1 read end
-                printf("Child #2 has read %ld bytes from pipe1 on success\n", ret);
-                printf("    ---msg: %s", buffer);
-                ret = write(pipefd2[1], "Child #2 send msg\n", 512); //pipe2 write end
-                printf("Child #2 has send to pipe2 %ld bytes on success\n", ret);
-            }
-
-
-        }else{
-            //parent process
-            waitpid(rc2, NULL, 0);
-            printf("finished\n");
-
+            read(pipefd1[0], buf, 1); //pipe1 read end
+            write(pipefd2[1], "a", 1); //pipe2 write end
         }
         
     }
