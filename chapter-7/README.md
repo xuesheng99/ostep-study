@@ -4,6 +4,8 @@
 
 ```bash
 # 时间切片长度，用于相同优先级的队列中的进程RR调度。
+# 进程的切片长度每执行一次，就递减一个值，直到为0。
+# 比如JOB0 -q 10，[time 0-6] 发出一次I/O，那么此时 JOB0 切片长度还剩3，JOB0 再次运行时，切片长度从2开始，直到0才算 JOB0 时间切片用完。
 -q QUANTUM, --quantum=QUANTUM
                         length of time slice (if not using -Q)
 # 时间配额长度，进程在某级队列的配额用完后，就进入低一级队列。
