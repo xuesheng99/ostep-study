@@ -92,11 +92,69 @@ Execution Trace:
 
 假如 [ALLOT] 为 2，JOB0 会保留在原来优先级队列中，那么 JOB0 什么时候会再次运行呢？
 
-答：如果配额为 2，在 JOB0 第 1 个时间片执行完以后，JOB0 还保持在优先级最高的队列中；如果此时发出 I/O，JOB0 会移到整个队列的队尾；如果没有发出 I/O，就说明 JOB0 可以立刻使用 CPU，因此 JOB0 会被移到下一个 JOB 的后面，等待运行。
+答：如果配额为 2，在 JOB0 第 1 个时间片执行完以后，JOB0 还保持在优先级最高的队列中；如果此时发出 I/O，此时 JOB0 处于阻塞状态，JOB0 会移到整个队列的队尾；如果没有发出 I/O，此时 JOB0 处于就绪状态，就说明 JOB0 可以立刻使用 CPU，因此 JOB0 会被移到下一个 JOB 的后面，准备运行。
 
 延申思考2
 
-什么时候开始执行次优先级队列中的进程？
+什么时候开始执行最高优先级的低一级队列中的进程？
 
-答：当最高优先级队列中没有进程，或最高优先级队列中的进程全部让出 CPU 时（比如全部在进行 I/O 操作），就会执行次优先级队列中的进程。
+答：当最高优先级队列中没有进程，或最高优先级队列中的进程全部让出 CPU 时（比如全部在进行 I/O 操作），就会执行次优先级队列中的进程，类推其他低优先级队列也是如此。
 
+# Questions
+
+1. 只用两个工作和两个队列运行几个随机生成的问题。针对每个工作计算 MLFQ 的执
+   行记录。限制每项作业的长度并关闭 I/O，让你的生活更轻松。
+
+   ```bash
+   prompt > ./mlfq.py -j 2 -n 2 -m 10 -M 0
+   
+   Here is the list of inputs:
+   OPTIONS jobs 2
+   OPTIONS queues 2
+   OPTIONS allotments for queue  1 is   1
+   OPTIONS quantum length for queue  1 is  10
+   OPTIONS allotments for queue  0 is   1
+   OPTIONS quantum length for queue  0 is  10
+   OPTIONS boost 0
+   OPTIONS ioTime 5
+   OPTIONS stayAfterIO False
+   OPTIONS iobump False
+   
+   Job List:
+     Job  0: startTime   0 - runTime   8 - ioFreq   0
+     Job  1: startTime   0 - runTime   4 - ioFreq   0
+     
+   # 这里自己推算执行记录，然后通过 -c 参数验证。
+   Execution Trace:
+   [time 0] JOB0 Ready
+   [time 0] JOB1 Ready
+   [time 0] Run JOB0 at PRIORITY 1 [ticks 9 allot 1 time 7(of 8)]
+   [time 1] Run JOB0 at PRIORITY 1 [ticks 8 allot 1 time 6(of 8)]
+   [time 2] Run JOB0 at PRIORITY 1 [ticks 7 allot 1 time 5(of 8)]
+   [time 3] Run JOB0 at PRIORITY 1 [ticks 6 allot 1 time 4(of 8)]
+   [time 4] Run JOB0 at PRIORITY 1 [ticks 5 allot 1 time 3(of 8)]
+   [time 5] Run JOB0 at PRIORITY 1 [ticks 4 allot 1 time 2(of 8)]
+   [time 6] Run JOB0 at PRIORITY 1 [ticks 3 allot 1 time 1(of 8)]
+   [time 7] Run JOB0 at PRIORITY 1 [ticks 2 allot 1 time 0(of 8)]
+   [time 8] Finished JOB0 # JOB0已经运行结束，让出CPU。
+   [time 8] Run JOB1 at PRIORITY 1 [ticks 9 allot 1 time 3(of 4)]
+   [time 9] Run JOB1 at PRIORITY 1 [ticks 8 allot 1 time 2(of 4)]
+   [time 10] Run JOB1 at PRIORITY 1 [ticks 7 allot 1 time 1(of 4)]
+   [time 11] Run JOB1 at PRIORITY 1 [ticks 6 allot 1 time 0(of 4)]
+   [time 12] Finished JOB1 # JOB1已经运行结束，让出CPU。
+   
+   Final statistics:
+   JOB0: startTime 0, Response 0, turnaround 8
+   JOB1: startTime 0, Response 8, turnaround 12
+    Avg: startTime 0, Response 4, turnaround 10
+   ```
+
+2. 如何运行调度程序来重现本章中的每个实例？
+
+3. xx
+
+4. xx
+
+5. xx
+
+6. xx
