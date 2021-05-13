@@ -128,20 +128,20 @@ Execution Trace:
    Execution Trace:
    [time 0] JOB0 Ready
    [time 0] JOB1 Ready
-   [time 0] Run JOB0 at PRIORITY 1 [ticks 9 allot 1 time 7(of 8)]
-   [time 1] Run JOB0 at PRIORITY 1 [ticks 8 allot 1 time 6(of 8)]
-   [time 2] Run JOB0 at PRIORITY 1 [ticks 7 allot 1 time 5(of 8)]
-   [time 3] Run JOB0 at PRIORITY 1 [ticks 6 allot 1 time 4(of 8)]
-   [time 4] Run JOB0 at PRIORITY 1 [ticks 5 allot 1 time 3(of 8)]
-   [time 5] Run JOB0 at PRIORITY 1 [ticks 4 allot 1 time 2(of 8)]
-   [time 6] Run JOB0 at PRIORITY 1 [ticks 3 allot 1 time 1(of 8)]
-   [time 7] Run JOB0 at PRIORITY 1 [ticks 2 allot 1 time 0(of 8)]
-   [time 8] Finished JOB0 # JOB0已经运行结束，让出CPU。
-   [time 8] Run JOB1 at PRIORITY 1 [ticks 9 allot 1 time 3(of 4)]
-   [time 9] Run JOB1 at PRIORITY 1 [ticks 8 allot 1 time 2(of 4)]
-   [time 10] Run JOB1 at PRIORITY 1 [ticks 7 allot 1 time 1(of 4)]
-   [time 11] Run JOB1 at PRIORITY 1 [ticks 6 allot 1 time 0(of 4)]
-   [time 12] Finished JOB1 # JOB1已经运行结束，让出CPU。
+   [time 0] Run JOB 0 at PRIORITY 1 [ticks 9 allot 1 time 7(of 8)]
+   [time 1] Run JOB 0 at PRIORITY 1 [ticks 8 allot 1 time 6(of 8)]
+   [time 2] Run JOB 0 at PRIORITY 1 [ticks 7 allot 1 time 5(of 8)]
+   [time 3] Run JOB 0 at PRIORITY 1 [ticks 6 allot 1 time 4(of 8)]
+   [time 4] Run JOB 0 at PRIORITY 1 [ticks 5 allot 1 time 3(of 8)]
+   [time 5] Run JOB 0 at PRIORITY 1 [ticks 4 allot 1 time 2(of 8)]
+   [time 6] Run JOB 0 at PRIORITY 1 [ticks 3 allot 1 time 1(of 8)]
+   [time 7] Run JOB 0 at PRIORITY 1 [ticks 2 allot 1 time 0(of 8)]
+   [time 8] Finished JOB 0 # JOB0已经运行结束，让出CPU。
+   [time 8] Run JOB 1 at PRIORITY 1 [ticks 9 allot 1 time 3(of 4)]
+   [time 9] Run JOB 1 at PRIORITY 1 [ticks 8 allot 1 time 2(of 4)]
+   [time 10] Run JOB 1 at PRIORITY 1 [ticks 7 allot 1 time 1(of 4)]
+   [time 11] Run JOB 1 at PRIORITY 1 [ticks 6 allot 1 time 0(of 4)]
+   [time 12] Finished JOB 1 # JOB1已经运行结束，让出CPU。
    
    Final statistics:
    JOB0: startTime 0, Response 0, turnaround 8
@@ -150,6 +150,46 @@ Execution Trace:
    ```
 
 2. 如何运行调度程序来重现本章中的每个实例？
+
+   ```bash
+   实例1：单个长工作
+   prompt > ./mlfq.py -j 1 -n 3 -m 30 -M 0
+   
+   实例2：来了个短工作
+   prompt > ./mlfq.py -n 3 -l 0,200,0:100,20,0 -q 10
+   
+   实例3：如果有I/O呢？
+   ./mlfq.py -n 3 -l 0,200,0:0,200,1 -q 10 -S
+   # -S 用来模拟进程在时间片即将用完之前，发出一个I/O，让出CPU；在它恢复执行时（Ready状态），该进程还在原优先级队列中，而且它的时间片完全没有改变。
+   # 摘取部分Execution Trace:
+   # [ time 10 ] Run JOB 1 at PRIORITY 2 [ TICKS 9 ALLOT 1 TIME 199 (of 200) ]
+   # [ time 11 ] IO_START by JOB 1
+   # ...
+   # [ time 16 ] Run JOB 1 at PRIORITY 2 [ TICKS 9 ALLOT 1 TIME 198 (of 200) ]
+   # [ time 17 ] IO_START by JOB 1
+   # ...
+   # [ time 22 ] Run JOB 1 at PRIORITY 2 [ TICKS 9 ALLOT 1 TIME 197 (of 200) ]
+   # 可以看到 TICKS 9 一直保持不变。
+   # 当然加了 -S 属于愚弄调度程序。
+   # MLFQ通过时间配额来优化这种程序长时间占用CPU的问题，杜绝不公平调度，防止恶意欺骗攻击。
+   
+   实例4：图8.5
+   # 避免饥饿问题
+   prompt > ./mlfq.py -l 0,200,0:100,200,1:101,200,1 -i 1 -q 10 -S
+   # JOB0 一开始运行3个时间片后，被移入到最低优先级队列中，然后开始运行JOB1和JOB2，JOB0则一直处于饥饿状态，只有等待JOB2和JOB1运行结束，才会继续运行JOB0。假设JOB1和JOB2无限执行状态，那JOB0将会被饿死。
+   # 通过周期性地提升所有进程的优先级（将所有进程移入最高优先级队列中），-B BOOST 参数设置。
+   prompt > ./mlfq.py -l 0,200,0:100,200,1:101,200,1 -i 1 -q 10 -S -B 50
+   # 提升到最高优先级队列中时，时间切片为0 (TICKS 0)，表示进程被调度运行1次就会被移入低一级队列中。
+   # [ time 99 ] Run JOB 0 at PRIORITY 0 [ TICKS 1 ALLOT 1 TIME 100 (of 200) ]
+   # [ time 100 ] BOOST ( every 50 )
+   # [ time 100 ] Run JOB 0 at PRIORITY 2 [ TICKS 0 ALLOT 1 TIME 99 (of 200) ]
+   # ...
+   # [ time 103 ] Run JOB 0 at PRIORITY 1 [ TICKS 9 ALLOT 1 TIME 98 (of 200) ]
+   # 另外，在有时间配额（-a）、没有-S的条件下，低优先级队列中的进程还是会处于饥饿状态且被饿死。
+   # 比如攻击者不断创建进程且都在时间配额内运行结束。
+   ```
+
+   
 
 3. xx
 
