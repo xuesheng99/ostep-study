@@ -1,12 +1,7 @@
 #include <stdio.h>
 #include <pthread.h>
-#include <assert.h>
 
-#define Pthread_create(__newthread, __attr, __start_routine, __arg) \
-assert((pthread_create(__newthread, __attr, __start_routine, __arg)) == 0) 
-
-#define Pthread_join(__th, __thread_return) \
-assert((pthread_join(__th, __thread_return)) == 0)
+#include "./include/thread.h"
 
 static volatile int counter = 0;
 
