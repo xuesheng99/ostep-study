@@ -1,10 +1,20 @@
-all: p1 question1 question2 question3 question4 question5 question6 question7 question8
+all: p1 p2 p3 p4 question1 question2 question3 question4 question5 question6 question7 question8
  
 clean:
-	rm -f ./dist/*
+	rm -rf ./dist/*
+	rm -rf ./tmp/*
 
 p1:
 	gcc -o ./dist/p1 p1.c -Wall
+	
+p2:
+	gcc -o ./dist/p2 p2.c -Wall 
+
+p3:
+	gcc -o ./dist/p3 p3.c -Wall 
+
+p4:
+	gcc -o ./dist/p4 p4.c -Wall	
 
 question1:
 	gcc -o ./dist/question1 question1.c -Wall
