@@ -14,6 +14,9 @@ assert(pthread_mutex_lock(__mutex) == 0)
 #define Pthread_mutex_unlock(__mutex) \
 assert(pthread_mutex_unlock(__mutex) == 0)
 
+#define Pthread_cond_init(__cond, __condattr) \
+assert(pthread_cond_init(__cond, __condattr) == 0)
+
 #define Pthread_cond_wait(__cond, __mutex) \
 assert(pthread_cond_wait(__cond, __mutex) == 0)
 
